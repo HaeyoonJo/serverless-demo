@@ -1,0 +1,40 @@
+Comment: A Step function to send reminder emails after 24 second
+StartAt: addEmailToDB
+States:
+  addEmailToDB:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Parameters:
+      FunctionName: { "Fn::Join": [ ":", ["arn:aws:lambda:eu-west-1", { "Ref": "AWS::AccountId" }, "function:${self:service}-${self:provider.stage}-addSignup"]]}
+      Payload:
+        Input.$: "$"
+    Next: wait_for_24sec
+  wait_for_24sec:
+    Type: Wait
+    Seconds: 24
+    Next: ReadDB
+  ReadDB:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Parameters:
+      FunctionName: { "Fn::Join": [ ":", ["arn:aws:lambda:eu-west-1", { "Ref": "AWS::AccountId" }, "function:${self:service}-${self:provider.stage}-getSignup"]]}
+      Payload:
+        Input.$: "$"
+    Next: has_played
+  has_played:
+    Type: Choice
+    Choices:
+    - Variable: "$.Payload.played"
+      StringEquals: 'true'
+      Next: close
+    Default: send_reminder_email
+  send_reminder_email:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Parameters:
+      FunctionName: { "Fn::Join": [ ":", ["arn:aws:lambda:eu-west-1", { "Ref": "AWS::AccountId" }, "function:${self:service}-${self:provider.stage}-sendReminderEmail"]]}
+      Payload:
+        Input.$: "$"
+    Next: close
+  close:
+    Type: Succeed

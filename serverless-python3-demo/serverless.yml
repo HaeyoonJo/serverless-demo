@@ -1,0 +1,44 @@
+service: serverless-python3-demo
+frameworkVersion: '2'
+provider:
+  name: aws
+  runtime: python3.7
+  lambdaHashingVersion: 20201221
+  stage: ${file(./includes/env.json):env}
+
+plugins:
+  - serverless-step-functions
+  - serverless-iam-roles-per-function
+
+package:
+  individually: true
+  exclude:
+    - ./**
+
+functions:
+  insertUserFunc:
+    handler: insertUserFunction.lambda_handler
+    package:
+      include:
+        - insertUserFunction.py
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - ${file(./includes/env.json):iamRole.insertUserRole}
+        Resource: ${file(./includes/env.json):dynamodb}
+  promoteUserFun:
+    handler: getPromoteUserFunction.lambda_handler
+    package:
+      include:
+        - getPromoteUserFunction.py
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - ${file(./includes/env.json):iamRole.promoteUserRole}
+        Resource: ${file(./includes/env.json):dynamodb}
+
+stepFunctions:
+  stateMachines:
+    myStateMachine:
+      name: "${self:provider.stage}-serverless-python3-demo"
+      definition: ${file(./stepFunctions.yml)}
