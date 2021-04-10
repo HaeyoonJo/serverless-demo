@@ -25,7 +25,7 @@ functions:
       - Effect: "Allow"
         Action:
           - ${file(./includes/env.json):iamRole.insertUserRole}
-        Resource: ["arn:aws:dynamodb:us-east-1:<user-id>:table/ListOfName"]
+        Resource: ${file(./includes/env.json):dynamodb}
   promoteUserFun:
     handler: getPromoteUserFunction.lambda_handler
     package:
@@ -35,37 +35,10 @@ functions:
       - Effect: "Allow"
         Action:
           - ${file(./includes/env.json):iamRole.promoteUserRole}
-        Resource: ["arn:aws:dynamodb:us-east-1:<user-id>:table/ListOfName"]
+        Resource: ${file(./includes/env.json):dynamodb}
 
 stepFunctions:
   stateMachines:
     myStateMachine:
       name: "${self:provider.stage}-serverless-python3-demo"
-      definition:
-        Comment: "demo stepfunctions"
-        StartAt: "insertUserFunc"
-        States:
-          insertUserFunc:
-            Comment: "insert user data and return status_code"
-            Type: Task
-            Resource: { "Fn::GetAtt": [ 
-                "InsertUserFuncLambdaFunction", "Arn"
-              ]}
-            Next: statusCheck
-          statusCheck:
-            Comment: "validating process"
-            Type: Choice
-            Choices:
-              - Variable: $.process
-                BooleanEquals: true
-                Next: promoteUserFun
-          promoteUserFun:
-            Comment: "update promoting user data with date"
-            Type: Task
-            Resource: { "Fn::GetAtt": [ 
-                "PromoteUserFunLambdaFunction", "Arn"
-              ]}
-            Next: Done
-          Done:
-            Type: Pass
-            End: true
+      definition: ${file(./stepFunctions.yml)}

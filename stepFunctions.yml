@@ -1,0 +1,27 @@
+Comment: "demo stepfunctions"
+StartAt: "insertUserFunc"
+States:
+  insertUserFunc:
+    Comment: "insert user data and return status_code"
+    Type: Task
+    Resource: { "Fn::GetAtt": [ 
+        "InsertUserFuncLambdaFunction", "Arn"
+      ]}
+    Next: statusCheck
+  statusCheck:
+    Comment: "validating process"
+    Type: Choice
+    Choices:
+      - Variable: $.process
+        BooleanEquals: true
+        Next: promoteUserFun
+  promoteUserFun:
+    Comment: "update promoting user data with date"
+    Type: Task
+    Resource: { "Fn::GetAtt": [ 
+        "PromoteUserFunLambdaFunction", "Arn"
+      ]}
+    Next: Done
+  Done:
+    Type: Pass
+    End: true
